@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/whizzzkid/fuelPrices/issues"
   },
-  "homepage": "https://github.com/whizzzkid/fuelPrices#readme"
+  "homepage": "https://github.com/whizzzkid/fuelPrices#readme",
+  "dependencies": {
+    "@types/google-apps-script": "^1.0.14"
+  }
 }

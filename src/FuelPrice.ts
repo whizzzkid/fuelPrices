@@ -1,4 +1,6 @@
 import { API_URL, SHEET_NAME, DEBUG, SNAPSHOT_INTERVALS, CAUSED } from './constants';
+import { DestFuelPrice } from './interfaces/DestFuelPrice';
+import { ApiResponse } from './interfaces/ApiResponse';
 
 export class FuelPrice {
     _sheet: GoogleAppsScript.Spreadsheet.Sheet;
@@ -15,7 +17,7 @@ export class FuelPrice {
         const lastDate = new Date(this._sheet.getRange(2,1).getValue() || 0);
         if (createdDate.valueOf() > lastDate.valueOf() || DEBUG) {
             this._sheet.insertRowAfter(1);
-            this._sheet.getRange(2,1).setValue(new Date(createdDate));
+            this._sheet.getRange(2,1).setValue(createdDate);
             this._results.forEach((result: DestFuelPrice, idx: number) => {
                 const petrolCol = (2 * idx) + 2;
                 const dieselCol = petrolCol + 1;
@@ -25,14 +27,14 @@ export class FuelPrice {
         }
     }
 
-    digestPrice(result: DestFuelPrice, col: number, commodity: string) {
+    digestPrice(result: DestFuelPrice, col: number, commodity: 'Petrol' | 'Diesel') {
         this.fixHeaders(result, col, commodity);
-        const newPriceKey: (keyof DestFuelPrice) = `${commodity.toLowerCase()}Price`;
+        const newPriceKey: (keyof DestFuelPrice) = commodity === 'Petrol' ? 'petrolPrice': 'dieselPrice';;
         const {
             [newPriceKey]: newPriceStr,
             cityState
         } = result;
-        const newPrice = parseFloat(parseFloat(newPriceStr).toFixed(2));
+        const newPrice = parseFloat(parseFloat(`${newPriceStr}`).toFixed(2));
         const oldPrice = parseFloat(this._sheet.getRange(3, col).getValue() || newPrice);
         
         // save value
@@ -113,7 +115,7 @@ export class FuelPrice {
     }
 
     getResponseFromApi(type: string): ApiResponse {
-        return deserialize(JSON.parse(UrlFetchApp.fetch(`${API_URL}${type}`).getContentText()), );
+        return <ApiResponse>JSON.parse(UrlFetchApp.fetch(`${API_URL}${type}`).getContentText());
     }
 
     refreshResults(): void {

@@ -1,4 +1,4 @@
-declare type DestFuelPrice = {
+export interface DestFuelPrice {
     dieselChange: number,
     isActive: boolean,
     cityState: string,
@@ -12,7 +12,3 @@ declare type DestFuelPrice = {
     seoname: string,
     createdDate: string
 };
-
-declare type ApiResponse = {
-    results: Array<DestFuelPrice>
-}

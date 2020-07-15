@@ -15,14 +15,15 @@ export class FuelPrice {
         this.refreshHeaders();
         const createdDate = new Date(this._results[0].createdDate);
         const lastDate = new Date(this._sheet.getRange(2,1).getValue() || 0);
-        if (createdDate.valueOf() > lastDate.valueOf() || DEBUG) {
+        if (createdDate > lastDate || DEBUG) {
             this._sheet.insertRowAfter(1);
             this._sheet.getRange(2,1).setValue(createdDate);
-            this._results.forEach((result: DestFuelPrice, idx: number) => {
+            this._results.forEach(({cityState, ...result}: DestFuelPrice, idx: number) => {
+                const r = {...result, cityState: cityState.replace(' ', '')};
                 const petrolCol = (2 * idx) + 2;
                 const dieselCol = petrolCol + 1;
-                this.digestPrice(result, petrolCol, 'Petrol')
-                this.digestPrice(result, dieselCol, 'Diesel');
+                this.digestPrice(r, petrolCol, 'Petrol')
+                this.digestPrice(r, dieselCol, 'Diesel');
             });
         }
     }

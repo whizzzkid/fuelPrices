@@ -5,7 +5,7 @@ export default {
     input: 'src/index.ts',
     output: {
         file: 'dist/fuelPrice.js',
-        format: 'es',
+        format: 'cjs',
     },
     plugins: [
         typescript(),

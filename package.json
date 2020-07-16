@@ -4,9 +4,9 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "build": "rollup -c; sed -i '$ d' dist/fuelPrice.js;",
+    "build": "rollup -c && sed -i '$ d' dist/fuelPrice.js;",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "push": "npm run build; cd dist; clasp push; cd ..;"
+    "push": "npm run build && cd dist && clasp push && cd .."
   },
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
     "url": "https://github.com/whizzzkid/fuelPrices/issues"
   },
   "homepage": "https://github.com/whizzzkid/fuelPrices#readme",
-  "dependencies": {
+  "devDependencies": {
     "@google/clasp": "^2.3.0",
     "@rollup/plugin-commonjs": "^14.0.0",
     "@rollup/plugin-typescript": "^5.0.2",

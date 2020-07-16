@@ -1,6 +1,7 @@
 import { TWITTER_CONSUMER_KEY, TWITTER_ACCESS_TOKEN, TWITTER_CONSUMER_SECRET, TWITTER_ACCESS_SECRET } from "./secrets";
 import { Tweet } from "./interfaces/Tweet";
 import { OAuthParams } from "./interfaces/OAuthParams";
+import { DEBUG } from "../config";
 
 export class Twitter {
     _method: GoogleAppsScript.URL_Fetch.HttpMethod = 'post';
@@ -8,7 +9,7 @@ export class Twitter {
 
     constructor() {}
 
-    get baseParameters(): OAuthParams {
+    get baseParameters(): Omit<OAuthParams, 'oauth_signature'> {
         const timestamp = (Math.floor((new Date()).getTime() / 1000)).toString();
         return {
             oauth_consumer_key: TWITTER_CONSUMER_KEY,
@@ -16,22 +17,21 @@ export class Twitter {
             oauth_timestamp: timestamp,
             oauth_signature_method: 'HMAC-SHA1',
             oauth_version: '1.0',
-            oauth_nonce: timestamp + Math.floor(Math.random() * 100000000),
-            oauth_signature: null
+            oauth_nonce: timestamp + Math.floor(Math.random() * 100000000)
         };
     }
 
-    generateUrlParamString(obj: Object): string {
-        return Object.entries(obj).map(([key, value]: [string, string]) => `${key}=${this.encode(value)}`).join('&');
+    generateUrlParamString(obj: Object, encode: boolean = false): string {
+        return Object.entries(obj).map(([key, value]: [string, string]) => encode ? `${key}=${this.encode(value)}` : `${key}=${value}`).join('&');
     }
 
     generateOauthParameters(payload: Tweet): OAuthParams {
-        const baseParams: OAuthParams = this.baseParameters;
-        const baseString: string = [
+        const baseParams: Omit<OAuthParams, 'oauth_signature'> = this.baseParameters;
+        const baseString: string = this.encode([
             this._method.toUpperCase(),
-            this.encode(this._baseUrl),
-            ...this.generateUrlParamString({ ...baseParams, ...payload })
-        ].join('&');
+            this._baseUrl,
+            this.generateUrlParamString({ ...baseParams, ...payload })
+        ].join('&'));
         return {
             ...baseParams,
             oauth_signature: Utilities.base64Encode(
@@ -47,11 +47,11 @@ export class Twitter {
     generateOptions(tweet: Tweet): GoogleAppsScript.URL_Fetch.URLFetchRequestOptions {
         const oauthParameters: OAuthParams = this.generateOauthParameters(tweet);
         const authorization: string = Object.entries(oauthParameters).map(([key, value]: [string, string]) => `${key}="${this.encode(value)}"`).join(', ');
-        const payload: string = this.generateUrlParamString(tweet);
+        const payload: string = this.generateUrlParamString(tweet, true);
         return {
             method: this._method,
             headers: {
-                authorization
+                authorization: `OAuth ${authorization}`
             },
             payload,
             muteHttpExceptions: true
@@ -72,9 +72,12 @@ export class Twitter {
             status: msg
         };
 
-        const response = UrlFetchApp.fetch(this._baseUrl, this.generateOptions(payload));
+        const options = this.generateOptions(payload);
+
+        const response = UrlFetchApp.fetch(this._baseUrl, options);
         Logger.log(JSON.stringify({
             tweet: msg,
+            options,
             responseHeader: response.getHeaders(),
             responseText: response.getContentText()
         }));

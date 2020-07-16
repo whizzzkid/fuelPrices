@@ -1,13 +1,17 @@
 import { API_URL, SHEET_NAME, DEBUG, SNAPSHOT_INTERVALS, CAUSED } from './constants';
 import { DestFuelPrice } from './interfaces/DestFuelPrice';
 import { ApiResponse } from './interfaces/ApiResponse';
+import { Twitter } from './Twitter';
 
 export class FuelPrice {
     _sheet: GoogleAppsScript.Spreadsheet.Sheet;
     _results: Array<DestFuelPrice>;
     _headers: Array<String>;
+    _twitter: Twitter;
 
-    constructor() {}
+    constructor() {
+        this._twitter = new Twitter();
+    }
 
     run(): void {
         this.refreshResults();
@@ -56,7 +60,7 @@ export class FuelPrice {
                 snapshotMsg = `Change since: [ ${snapshotMsgs.join(', ')} ]`
             }
             const tweet = `#${commodity}Price in #${cityState} ${this.resultCaused(oldPrice, newPrice)} by ${this.priceChange(oldPrice, newPrice)}, new price: ${this.currencyStr(newPrice)}. ${snapshotMsg}`;
-            console.log(tweet);
+            this._twitter.tweet(tweet);
         }
     }
 

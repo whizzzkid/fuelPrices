@@ -5,33 +5,73 @@ import { DEBUG } from "../config";
 
 export class Twitter {
     _method: GoogleAppsScript.URL_Fetch.HttpMethod = 'post';
-    _baseUrl: string = "https://api.twitter.com/1.1/statuses/update.json";
+    _baseUrl: string = 'https://api.twitter.com/1.1/statuses/update.json';
 
     constructor() {}
 
     get baseParameters(): Omit<OAuthParams, 'oauth_signature'> {
         const timestamp = (Math.floor((new Date()).getTime() / 1000)).toString();
+        
         return {
+            include_entities: true,
             oauth_consumer_key: TWITTER_CONSUMER_KEY,
-            oauth_token: TWITTER_ACCESS_TOKEN,
-            oauth_timestamp: timestamp,
+            oauth_nonce: timestamp + Math.floor(Math.random() * 100000000),
             oauth_signature_method: 'HMAC-SHA1',
-            oauth_version: '1.0',
-            oauth_nonce: timestamp + Math.floor(Math.random() * 100000000)
+            oauth_timestamp: timestamp,
+            oauth_token: TWITTER_ACCESS_TOKEN,
+            oauth_version: '1.0'
         };
     }
 
-    generateUrlParamString(obj: Object, encode: boolean = false): string {
-        return Object.entries(obj).map(([key, value]: [string, string]) => encode ? `${key}=${this.encode(value)}` : `${key}=${value}`).join('&');
+    generateUrlParamsArray({
+        obj,
+        translationMethod
+    }: {
+        obj: Object,
+        translationMethod: Function
+    }): Array<string> {
+        if (Object.entries(obj).length === 0) {
+            return [];
+        }
+        return Object.entries(obj).map(entry => translationMethod(entry)).sort();
+    }
+
+    generateUrlParamsString({
+        obj = {}, 
+        translationMethod, 
+        delimiter = '&', 
+        prepend = [], 
+        append = []
+    } : {
+        obj?: Object,
+        translationMethod?: Function, 
+        delimiter?: string,
+        prepend?: Array<string>,
+        append?: Array<string>
+    }): string {
+        return [...prepend, ...this.generateUrlParamsArray({obj, translationMethod}), ...append].join(delimiter);
     }
 
     generateOauthParameters(payload: Tweet): OAuthParams {
         const baseParams: Omit<OAuthParams, 'oauth_signature'> = this.baseParameters;
-        const baseString: string = this.encode([
-            this._method.toUpperCase(),
-            this._baseUrl,
-            this.generateUrlParamString({ ...baseParams, ...payload })
-        ].join('&'));
+        
+        const baseEncoded = this.generateUrlParamsString({
+            obj: {...baseParams, ...payload},
+            translationMethod: ([key, value]: [string, string]): string => (`${this.percentEncode(key)}=${this.percentEncode(value)}`)
+        })
+
+        const baseString: string = this.generateUrlParamsString({
+            prepend: [
+                this._method.toUpperCase(),
+                this.percentEncode(this._baseUrl),
+                this.percentEncode(baseEncoded),
+            ]
+        });
+
+        if (DEBUG) {
+            Logger.log(baseString);
+        }
+
         return {
             ...baseParams,
             oauth_signature: Utilities.base64Encode(
@@ -46,8 +86,21 @@ export class Twitter {
 
     generateOptions(tweet: Tweet): GoogleAppsScript.URL_Fetch.URLFetchRequestOptions {
         const oauthParameters: OAuthParams = this.generateOauthParameters(tweet);
-        const authorization: string = Object.entries(oauthParameters).map(([key, value]: [string, string]) => `${key}="${this.encode(value)}"`).join(', ');
-        const payload: string = this.generateUrlParamString(tweet, true);
+        if (DEBUG) {
+            Logger.log(oauthParameters);
+        }
+        
+        const authorization: string = this.generateUrlParamsString({
+            obj: oauthParameters, 
+            translationMethod: ([key, value]: [string, string]): string => `${key}="${value}"`, 
+            delimiter: ', '
+        });
+
+        const payload: string = this.generateUrlParamsString({
+            obj: tweet, 
+            translationMethod: ([key, value]: [string, string]): string => `${key}=${value}`
+        });
+        
         return {
             method: this._method,
             headers: {
@@ -58,18 +111,18 @@ export class Twitter {
         }
     }
 
-    encode(str: string): string {
+    percentEncode(str: string): string {
         return encodeURIComponent(str)
-            .replace('!', '%21')
-            .replace('*', '%2A')
-            .replace('(', '%28')
-            .replace(')', '%29')
-            .replace(`'`, '%27');
+            .replace(/\!/g, '%21')
+            .replace(/\*/g, '%2A')
+            .replace(/\(/g, '%28')
+            .replace(/\)/g, '%29')
+            .replace(/\'/g, '%27');
     }
 
     tweet(msg: string): void {
         const payload = {
-            status: msg
+            status: this.percentEncode(msg)
         };
 
         const options = this.generateOptions(payload);

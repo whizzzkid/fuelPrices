@@ -13,7 +13,6 @@ export class Twitter {
         const timestamp = (Math.floor((new Date()).getTime() / 1000)).toString();
         
         return {
-            include_entities: true,
             oauth_consumer_key: TWITTER_CONSUMER_KEY,
             oauth_nonce: timestamp + Math.floor(Math.random() * 100000000),
             oauth_signature_method: 'HMAC-SHA1',
@@ -30,9 +29,6 @@ export class Twitter {
         obj: Object,
         translationMethod: Function
     }): Array<string> {
-        if (Object.entries(obj).length === 0) {
-            return [];
-        }
         return Object.entries(obj).map(entry => translationMethod(entry)).sort();
     }
 
@@ -89,24 +85,10 @@ export class Twitter {
         if (DEBUG) {
             Logger.log(oauthParameters);
         }
-        
-        const authorization: string = this.generateUrlParamsString({
-            obj: oauthParameters, 
-            translationMethod: ([key, value]: [string, string]): string => `${key}="${value}"`, 
-            delimiter: ', '
-        });
 
-        const payload: string = this.generateUrlParamsString({
-            obj: tweet, 
-            translationMethod: ([key, value]: [string, string]): string => `${key}=${value}`
-        });
-        
         return {
             method: this._method,
-            headers: {
-                authorization: `OAuth ${authorization}`
-            },
-            payload,
+            payload: {...oauthParameters, ...tweet},
             muteHttpExceptions: true
         }
     }
@@ -120,20 +102,23 @@ export class Twitter {
             .replace(/\'/g, '%27');
     }
 
-    tweet(msg: string): void {
+    tweet(status: string): void {
         const payload = {
-            status: this.percentEncode(msg)
+            status
         };
-
+    
         const options = this.generateOptions(payload);
-
+    
         const response = UrlFetchApp.fetch(this._baseUrl, options);
-        Logger.log(JSON.stringify({
-            tweet: msg,
-            options,
-            responseHeader: response.getHeaders(),
-            responseText: response.getContentText()
-        }));
+        Logger.log(`Tweet: ${status}`);
+        if (DEBUG) {
+            Logger.log(JSON.stringify({
+                options,
+                responseCode: response.getResponseCode(),
+                responseHeader: response.getHeaders(),
+                responseText: response.getContentText()
+            }));
+        }
     }
 
 }

@@ -1,7 +1,8 @@
-import { API_URL, SHEET_NAME, DEBUG, SNAPSHOT_INTERVALS, CAUSED } from './constants';
+import { API_URL, SHEET_NAME, SNAPSHOT_INTERVALS, CAUSED } from './constants';
 import { DestFuelPrice } from './interfaces/DestFuelPrice';
 import { ApiResponse } from './interfaces/ApiResponse';
 import { Twitter } from '../Twitter';
+import { DEBUG } from '../config';
 
 export class FuelPrice {
     _sheet: GoogleAppsScript.Spreadsheet.Sheet;

@@ -1,4 +1,4 @@
-# fuelPrices Twitter Bot running on Google Apps Script.
+# fuelPrices: Twitter Bot running on Google Apps Script.
 
 Hosting a twitter posting bot on Google's Apps Script environment while using Google Sheets as your data store.
 
@@ -6,6 +6,7 @@ Hosting a twitter posting bot on Google's Apps Script environment while using Go
 
 - Bot Account: https://twitter.com/FuelPriceHike
 - Data Store: https://docs.google.com/spreadsheets/d/1fMASOyPWnOQyaNBg4SUwmtIW2C6uWEWIYrrTJq0HaI8/edit
+- Post: https://nishantarora.in/Hosting-A-Twitter-Bot-With-Google-Apps-Script.naml
 
 ## Building
 
